@@ -1,0 +1,55 @@
+name: ingress-demo
+
+on:
+  pull:
+    branches:
+	  - "*"
+	paths:
+      - "Dockerfile"
+      - "assets/**"
+      - "nginx/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      REGISTRY: registry.rafay.us
+      REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+      REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+      REPO_NAME: ingress-demo
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+      - name: Prepare image tag
+        id: create_tag
+        env:
+          DOCKER_IMAGE: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}
+        run: |
+          DOCKER_IMAGE=${DOCKER_IMAGE}
+          if [[ ${GITHUB_REF} == refs/heads/* ]]; then
+            VERSION=$(echo ${GITHUB_REF#refs/heads/*} | sed -r 's#/+#-#g')
+            if [[ ${VERSION} == master ]]; then
+              VERSION=latest
+            fi
+          else
+            VERSION=edge
+          fi
+          TAG="${DOCKER_IMAGE}:${VERSION}"
+          echo ::set-output name=created::$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          echo ::set-output name=tag::${TAG}
+      - name: Log in to container registry
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ env.REGISTRY_USERNAME }}
+          password: ${{ env.REGISTRY_PASSWORD }}
+      - name: Build and push container image
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          context: ./source/adservice
+          tags: ${{ steps.create_tag.outputs.tag }}
+          labels: |
+            org.opencontainers.image.created=${{ steps.create_tag.outputs.created }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=${{ github.repository }}
