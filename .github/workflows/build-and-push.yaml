@@ -5,6 +5,7 @@ on:
     branches:
       - "*"
     paths:
+      - ".github/workflows/**"
       - "Dockerfile"
       - "assets/**"
       - "nginx/**"
