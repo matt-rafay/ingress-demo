@@ -1,6 +1,5 @@
-name: ingress-demo
-
 on:
+ #pull_request_review:
   push:
     branches:
       - "*"
@@ -9,20 +8,19 @@ on:
       - "Dockerfile"
       - "assets/**"
       - "nginx/**"
+   #types:
+   #  - submitted
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      REGISTRY: ${{ secrets.REGISTRY }}
-      REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
-      REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
-      REPO_NAME: ${{ secrets.REPO_NAME }}
+    name: Build and Push
+   #if
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
       - name: Prepare image tag
-        id: create_tag
+        id: prepare_tag
         env:
           DOCKER_IMAGE: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}
         run: |
@@ -40,6 +38,11 @@ jobs:
           echo ::set-output name=tag::${TAG}
       - name: Log in to container registry
         uses: docker/login-action@v1
+        env:
+          REGISTRY: ${{ secrets.REGISTRY }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+          REPO_NAME: ${{ secrets.REPO_NAME }}
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ env.REGISTRY_USERNAME }}
@@ -49,8 +52,8 @@ jobs:
         with:
           push: true
           context: .
-          tags: ${{ steps.create_tag.outputs.tag }}
+          tags: ${{ steps.prepare_tag.outputs.tag }}
           labels: |
-            org.opencontainers.image.created=${{ steps.create_tag.outputs.created }}
+            org.opencontainers.image.created=${{ steps.prepare_tag.outputs.created }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.source=${{ github.repository }}
