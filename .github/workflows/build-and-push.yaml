@@ -14,10 +14,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      REGISTRY: registry.rafay.us
+      REGISTRY: ${{ secrets.REGISTRY }}
       REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
       REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
-      REPO_NAME: ingress-demo
+      REPO_NAME: ${{ secrets.REPO_NAME }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
@@ -48,7 +48,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          context: ./source/adservice
+          context: .
           tags: ${{ steps.create_tag.outputs.tag }}
           labels: |
             org.opencontainers.image.created=${{ steps.create_tag.outputs.created }}
