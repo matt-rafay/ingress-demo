@@ -1,5 +1,3 @@
-name: ingress-demo
-
 on:
  #pull_request_review:
   push:
@@ -24,9 +22,7 @@ jobs:
       - name: Prepare image tag
         id: prepare_tag
         env:
-          REGISTRY: ${{ secrets.REGISTRY }}
-		  REPO_NAME: ${{ secrets.REPO_NAME }}
-          DOCKER_IMAGE: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}
+          DOCKER_IMAGE: ${{ secrets.REGISTRY }}/${{ secrets.REPO_NAME }}
         run: |
           DOCKER_IMAGE=${DOCKER_IMAGE}
           if [[ ${GITHUB_REF} == refs/heads/* ]]; then
