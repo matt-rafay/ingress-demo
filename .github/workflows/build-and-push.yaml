@@ -3,8 +3,8 @@ name: ingress-demo
 on:
   push:
     branches:
-	  - "*"
-	paths:
+      - "*"
+    paths:
       - "Dockerfile"
       - "assets/**"
       - "nginx/**"
