@@ -15,45 +15,40 @@ jobs:
   build:
     runs-on: ubuntu-latest
     name: Build and Push
-   #if
+    if: github.events.review.state == 'approved'
     steps:
-      - name: Check out repository
+      - name: Check out Git repository
         uses: actions/checkout@v2
-      - name: Prepare image tag
+      - name: Prepare Docker image tag
         id: prepare_tag
         env:
-          DOCKER_IMAGE: ${{ secrets.REGISTRY }}/${{ secrets.REPO_NAME }}
+          REGISTRY_HOST: ${{ secrets.REGISTRY_HOST }}
+          IMAGE_NAME: ${{ secrets.IMAGE_NAME }}
         run: |
-          DOCKER_IMAGE=${DOCKER_IMAGE}
-          if [[ ${GITHUB_REF} == refs/heads/* ]]; then
-            VERSION=$(echo ${GITHUB_REF#refs/heads/*} | sed -r 's#/+#-#g')
-            if [[ ${VERSION} == master ]]; then
-              VERSION=latest
+          TAG=$(echo ${GITHUB_REF#refs/heads/*} | sed -r 's#/+#-#g')
+          if [ -n "${TAG}" ]; then
+            if [ "${TAG}" == "master" ]; then
+              TAG=latest
             fi
           else
-            VERSION=edge
+            TAG=edge
           fi
-          TAG="${DOCKER_IMAGE}:${VERSION}"
-          echo ::set-output name=created::$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-          echo ::set-output name=tag::${TAG}
-      - name: Log in to container registry
+          DOCKER_IMAGE=${REGISTRY_HOST}/${IMAGE_NAME}:${TAG}
+          echo ::set-output name=date_created::$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          echo ::set-output name=docker_image::${DOCKER_IMAGE}
+      - name: Log in to Docker registry
         uses: docker/login-action@v1
-        env:
-          REGISTRY: ${{ secrets.REGISTRY }}
-          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
-          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
-          REPO_NAME: ${{ secrets.REPO_NAME }}
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ env.REGISTRY_USERNAME }}
-          password: ${{ env.REGISTRY_PASSWORD }}
-      - name: Build and push container image
+          registry: ${{ secrets.REGISTRY_HOST }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+      - name: Build container image and push to Docker registry
         uses: docker/build-push-action@v2
         with:
           push: true
           context: .
-          tags: ${{ steps.prepare_tag.outputs.tag }}
+          tags: ${{ steps.prepare_tag.outputs.docker_image }}
           labels: |
-            org.opencontainers.image.created=${{ steps.prepare_tag.outputs.created }}
+            org.opencontainers.image.created=${{ steps.prepare_tag.outputs.date_created }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.source=${{ github.repository }}
