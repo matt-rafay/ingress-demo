@@ -1,6 +1,5 @@
 on:
- #pull_request_review:
-  push:
+  pull_request_review:
     branches:
       - "*"
     paths:
@@ -8,14 +7,14 @@ on:
       - "Dockerfile"
       - "assets/**"
       - "nginx/**"
-   #types:
-   #  - submitted
+    types:
+      - submitted
 
 jobs:
   build:
     runs-on: ubuntu-latest
     name: Build and Push
-   #if: github.events.review.state == 'approved'
+    if: github.events.review.state == 'approved'
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v2
